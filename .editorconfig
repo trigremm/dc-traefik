@@ -1,0 +1,52 @@
+# EditorConfig is awesome: https://EditorConfig.org
+root = true
+
+[*]
+end_of_line = lf
+insert_final_newline = true
+charset = utf-8
+trim_trailing_whitespace = true
+
+[*.patch]
+insert_final_newline = false
+
+# YAML (docker-compose.yaml, traefik.yml, dynamic/*.yml)
+[*.{yaml,yml}]
+indent_style = space
+indent_size = 2
+
+# Makefiles require tabs
+[{Makefile,*.mk}]
+indent_style = tab
+tab_width = 4
+
+# Dockerfile
+[Dockerfile]
+indent_style = space
+indent_size = 2
+
+# TOML / INI
+[*.{toml,ini}]
+indent_style = space
+indent_size = 2
+
+# JSON (acme.json structure, htpasswd is plain text)
+[*.json]
+indent_style = space
+indent_size = 2
+
+# Markdown — preserve trailing spaces for hard line breaks
+[*.md]
+indent_style = space
+indent_size = 2
+trim_trailing_whitespace = false
+
+# Shell scripts
+[*.sh]
+indent_style = space
+indent_size = 4
+
+# Env files
+[.env*]
+indent_style = space
+indent_size = 2

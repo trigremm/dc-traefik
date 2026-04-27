@@ -1,0 +1,21 @@
+# ide
+.idea
+.vscode
+
+# system files
+.DS_Store
+
+# env files
+.env
+.env.*
+!.env.sample
+
+# secrets / state (Traefik runtime)
+acme/acme.json
+acme/dashboard.htpasswd
+
+# logs
+*.log
+
+# prompt files
+prompt*.txt

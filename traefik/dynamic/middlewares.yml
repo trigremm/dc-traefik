@@ -1,0 +1,50 @@
+http:
+  middlewares:
+    admin-auth:
+      basicAuth:
+        # generate hash via: make htpasswd USER=admin PASS=secret
+        # then put the line into TRAEFIK_DASHBOARD_USERS env (escape $ as $$ inside compose)
+        usersFile: /acme/dashboard.htpasswd
+
+    secure-headers:
+      headers:
+        frameDeny: true
+        contentTypeNosniff: true
+        browserXssFilter: true
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        referrerPolicy: 'strict-origin-when-cross-origin'
+        customResponseHeaders:
+          X-Permitted-Cross-Domain-Policies: 'none'
+          Permissions-Policy: 'camera=(), microphone=(), geolocation=()'
+
+    rate-limit-default:
+      rateLimit:
+        average: 100
+        burst: 200
+
+    rate-limit-strict:
+      rateLimit:
+        average: 20
+        burst: 40
+
+    spa-csp:
+      headers:
+        contentSecurityPolicy: >-
+          default-src 'self';
+          script-src 'self';
+          style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+          font-src 'self' https://fonts.gstatic.com data:;
+          img-src 'self' data: https: blob:;
+          connect-src 'self' https://*.sentry.io;
+          frame-ancestors 'none';
+          base-uri 'self';
+          form-action 'self'
+
+    api-csp:
+      headers:
+        contentSecurityPolicy: "default-src 'none'; frame-ancestors 'none'"
+
+    compress:
+      compress: {}
