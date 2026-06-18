@@ -1,6 +1,10 @@
 # dc-traefik
 
-Hostwide Traefik v3.2 reverse proxy. Listens on `:80` and `:443`, terminates TLS via Let's Encrypt, and routes traffic to any container attached to the `traefik-public` network with `traefik.enable=true` labels.
+Hostwide Traefik v3.5 reverse proxy. Listens on `:80` and `:443`, terminates TLS via Let's Encrypt, and routes traffic to any container attached to the `traefik-public` network with `traefik.enable=true` labels.
+
+Traefik reads the Docker API through a read-only [socket-proxy](https://github.com/Tecnativa/docker-socket-proxy) (only `containers`/`networks`/`events` exposed) — it never touches `/var/run/docker.sock` directly, so a compromised Traefik can't take over the host. Images are pinned by digest, both services carry CPU/memory limits and log rotation, and TLS handshake policy is pinned to TLS 1.2+ with a modern cipher set.
+
+> **Docker 28+ caveat:** Traefik's Docker client pins API version 1.24, which Docker 28 dropped (daemon minimum is now 1.44) — the provider fails with `API returned a 400` on such hosts. This affects the raw socket too, not just the proxy. Run the host on Docker ≤ 27 until Traefik bumps its vendored API version.
 
 ## Quick start
 
@@ -139,24 +143,38 @@ Defined in `traefik/dynamic/middlewares.yml`, referenced from any project as `<n
 
 To change middleware, edit the YAML — `watch: true` is enabled, no restart needed.
 
+`secure-headers@file` and `compress@file` are applied to **every** websecure router by default (set on the entrypoint in `traefik.yml`), so a service that forgets its label still gets hardened headers and compression. Rate limits stay opt-in per-router. TLS handshake defaults (min TLS 1.2, modern ciphers) live in `traefik/dynamic/tls.yml`.
+
+### Certificate resolvers
+
+| Resolver              | Use                                                             |
+| --------------------- | --------------------------------------------------------------- |
+| `letsencrypt`         | production HTTP-01 (default)                                    |
+| `letsencrypt-staging` | LE staging — debug issuance without burning the prod rate limit |
+| `letsencrypt-dns`     | commented template for wildcard certs (DNS-01, needs provider)  |
+
 ## Layout
 
 ```
 .
-├── docker-compose.yaml
+├── docker-compose.yaml               # traefik + read-only docker socket-proxy
+├── docker-compose.override.yaml.sample  # local dev (no LE, insecure dashboard)
 ├── Makefile                          # only `include makefiles/*.mk` lines
 ├── makefiles/
 │   ├── makefile_docker.mk            # network create + prune (with CONFIRM=1)
 │   ├── makefile_docker_compose.mk    # lifecycle, aliases, pattern targets
 │   ├── makefile_git.mk               # git-pull, git-commit-message
+│   ├── makefile_local.mk             # local-up/down/status/clean
 │   └── makefile_traefik.mk           # bootstrap, htpasswd, certs, test
 ├── .env.sample
 ├── traefik/
 │   ├── traefik.yml                   # static config (entryPoints, providers, ACME)
 │   └── dynamic/
-│       └── middlewares.yml           # shared middleware (hot-reloaded)
+│       ├── middlewares.yml           # shared middleware (hot-reloaded)
+│       └── tls.yml                   # TLS handshake policy (hot-reloaded)
 └── acme/
     ├── acme.json                     # Let's Encrypt certs (chmod 600, gitignored)
+    ├── acme-staging.json             # LE staging certs (chmod 600, gitignored)
     └── dashboard.htpasswd            # dashboard basic-auth users (gitignored)
 ```
 
@@ -172,4 +190,5 @@ The only stateful files worth backing up:
 
 - `acme.json` must be `chmod 600`, the bootstrap target enforces this.
 - Dashboard is **not** exposed on a host port. Access via `https://${TRAEFIK_DASHBOARD_HOST}/dashboard/` with basic auth.
-- For wildcard certs (e.g. `*.example.com`), switch `httpChallenge` to `dnsChallenge` in `traefik.yml` and add provider credentials via env (Cloudflare, Route53, etc.).
+- For wildcard certs (e.g. `*.example.com`), uncomment the `letsencrypt-dns` resolver template in `traefik.yml` (DNS-01), add provider credentials via env (Cloudflare, Route53, etc.), and point routers at `certresolver=letsencrypt-dns`.
+- While debugging issuance, point a router at `certresolver=letsencrypt-staging` to avoid the production LE rate limit (50 certs/domain/week); switch back once it works.

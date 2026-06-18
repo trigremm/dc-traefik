@@ -16,10 +16,17 @@ entryPoints:
     http:
       tls:
         certResolver: letsencrypt
+      # applied to every router on this entrypoint, so a service that forgets
+      # its labels still gets hardened headers + compression (rate limits stay
+      # per-router — global limits would be too blunt).
+      middlewares:
+        - secure-headers@file
+        - compress@file
 
 providers:
   docker:
-    endpoint: 'unix:///var/run/docker.sock'
+    # reach Docker through the read-only socket-proxy, never the raw socket
+    endpoint: 'tcp://socket-proxy:2375'
     exposedByDefault: false
     network: traefik-public
     watch: true
@@ -34,6 +41,28 @@ certificatesResolvers:
       storage: /acme/acme.json
       httpChallenge:
         entryPoint: web
+
+  # Same as above but against LE staging — use while debugging issuance to avoid
+  # burning the production rate limit (50 certs/domain/week). Opt in per-router
+  # with `...tls.certresolver=letsencrypt-staging`.
+  letsencrypt-staging:
+    acme:
+      caServer: https://acme-staging-v02.api.letsencrypt.org/directory
+      storage: /acme/acme-staging.json
+      httpChallenge:
+        entryPoint: web
+
+  # DNS-01 resolver template for wildcard certs (*.example.com). HTTP-01 above
+  # cannot issue wildcards. Uncomment, set the provider + its API creds in .env,
+  # and add the matching dnsChallenge.provider env vars.
+  # letsencrypt-dns:
+  #   acme:
+  #     storage: /acme/acme-dns.json
+  #     dnsChallenge:
+  #       provider: cloudflare
+  #       resolvers:
+  #         - '1.1.1.1:53'
+  #         - '8.8.8.8:53'
 
 api:
   dashboard: true

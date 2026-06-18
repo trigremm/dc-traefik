@@ -16,8 +16,9 @@ docker-compose.override.yml
 !docker-compose.override.yaml.sample
 
 # secrets / state (Traefik runtime)
-acme/acme.json
+acme/*.json
 acme/dashboard.htpasswd
+acme/dashboard.htpasswd.tmp
 
 # logs
 *.log

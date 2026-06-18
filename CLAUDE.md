@@ -4,29 +4,37 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 ## Purpose
 
-Hostwide Traefik v3.2 reverse proxy for the trigremm host. Terminates TLS via Let's Encrypt, owns ports `:80` and `:443`, and routes traffic to any container attached to the `traefik-public` Docker network with `traefik.enable=true` labels.
+Hostwide Traefik v3.5 reverse proxy for the trigremm host. Terminates TLS via Let's Encrypt, owns ports `:80` and `:443`, and routes traffic to any container attached to the `traefik-public` Docker network with `traefik.enable=true` labels.
 
 This stack is the **single ingress** for all projects on the host. Other deploy stacks (tidaar, alphaedu, lbsb, individual `dc-*` services) attach to `traefik-public` as `external: true` and add their own routers via labels.
+
+Traefik does **not** mount `/var/run/docker.sock`. It reads the Docker API through a sidecar **socket-proxy** (`tecnativa/docker-socket-proxy`) on an internal-only network, with only `containers`/`networks`/`events` whitelisted. Both images are pinned by digest and carry CPU/memory limits + log rotation.
 
 ## Layout
 
 ```
 .
-├── docker-compose.yaml
+├── docker-compose.yaml               # traefik + socket-proxy (read-only docker API)
+├── docker-compose.override.yaml.sample  # local dev: no LE, insecure dashboard
 ├── Makefile                          # only `include makefiles/*.mk`
 ├── makefiles/
 │   ├── makefile_docker.mk            # network create + prune (CONFIRM=1 on danger)
 │   ├── makefile_docker_compose.mk    # lifecycle, aliases, pattern targets
 │   ├── makefile_git.mk               # git-pull, git-commit-message
+│   ├── makefile_local.mk             # local-up/down/status/clean
 │   └── makefile_traefik.mk           # bootstrap, htpasswd, certs, test
 ├── traefik/
 │   ├── traefik.yml                   # static config — change requires `make reload`
-│   └── dynamic/
-│       └── middlewares.yml           # shared middleware — hot-reloaded (watch=true)
+│   └── dynamic/                      # hot-reloaded (watch=true)
+│       ├── middlewares.yml           # shared middleware
+│       └── tls.yml                   # TLS handshake policy (min TLS 1.2 + ciphers)
 └── acme/
-    ├── acme.json                     # LE certs, chmod 600, gitignored
+    ├── acme.json                     # LE prod certs, chmod 600, gitignored
+    ├── acme-staging.json             # LE staging certs, chmod 600, gitignored
     └── dashboard.htpasswd            # dashboard basic-auth, gitignored
 ```
+
+> **Docker 28+ caveat:** Traefik's Docker client pins API 1.24; Docker 28 raised the daemon minimum to 1.44, so the provider fails with `API returned a 400` there (true for the raw socket too, not just the proxy). Keep the host on Docker ≤ 27 until Traefik bumps its vendored API version.
 
 ## Build & Development Commands
 

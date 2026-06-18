@@ -1,20 +1,62 @@
 services:
+  # Read-only Docker API proxy. Traefik never touches the raw socket; it queries
+  # only the container/network endpoints exposed here. Compromising Traefik no
+  # longer means handing over the host.
+  socket-proxy:
+    image: tecnativa/docker-socket-proxy:0.3.0@sha256:9e4b9e7517a6b660f2cc903a19b257b1852d5b3344794e3ea334ff00ae677ac2
+    container_name: traefik-socket-proxy
+    restart: always
+    environment:
+      # allow only what the Traefik docker provider needs
+      CONTAINERS: 1
+      NETWORKS: 1
+      EVENTS: 1
+      PING: 1
+      # explicit denies (defaults, pinned for clarity)
+      SERVICES: 0
+      TASKS: 0
+      SWARM: 0
+      NODES: 0
+      IMAGES: 0
+      VOLUMES: 0
+      INFO: 0
+      POST: 0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - socket-proxy
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: '0.50'
+
   traefik:
-    image: traefik:v3.2
+    image: traefik:v3.5.6@sha256:16acb89c6db341182970d6fdafece31303b0a380a8ed7aa51682e225229bf1d2
     container_name: traefik
     restart: always
+    depends_on:
+      - socket-proxy
     ports:
       - '80:80'
       - '443:443'
     env_file:
       - .env
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # no docker.sock here — Traefik reaches Docker through socket-proxy
       - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
       - ./traefik/dynamic:/etc/traefik/dynamic:ro
       - ./acme:/acme
     networks:
       - traefik-public
+      - socket-proxy
     security_opt:
       - no-new-privileges:true
     healthcheck:
@@ -22,6 +64,16 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '5'
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '1.00'
     labels:
       - 'traefik.enable=true'
       - 'traefik.docker.network=traefik-public'
@@ -29,9 +81,17 @@ services:
       - 'traefik.http.routers.dashboard.entrypoints=websecure'
       - 'traefik.http.routers.dashboard.tls.certresolver=letsencrypt'
       - 'traefik.http.routers.dashboard.service=api@internal'
-      - 'traefik.http.routers.dashboard.middlewares=admin-auth@file,secure-headers@file'
+      - 'traefik.http.routers.dashboard.middlewares=admin-auth@file,secure-headers@file,rate-limit-strict@file'
 
 networks:
+  # shared host-wide ingress network; created once via `make docker-network-create`
+  # (or any `up`/`recreate` target) and attached to by every other stack as external
   traefik-public:
+    external: true
     name: traefik-public
+  # internal-only: not routable from the host, isolates the Docker API proxy.
+  # Owned by this stack, so Compose manages its lifecycle.
+  socket-proxy:
+    name: traefik-socket-proxy
     driver: bridge
+    internal: true

@@ -36,7 +36,7 @@ ps: git-commit-message
 build:
 	$(DC_BIN) build
 
-up: traefik-bootstrap
+up: docker-network-create traefik-bootstrap
 	$(DC_BIN) up -d
 
 stop:

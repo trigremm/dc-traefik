@@ -7,7 +7,7 @@ OVERRIDE_SAMPLE := docker-compose.override.yaml.sample
 .PHONY: local-init local-up local-down local-status local-clean
 
 # Copy override sample if missing (idempotent), then bring stack up
-local-up: local-init traefik-bootstrap
+local-up: docker-network-create local-init traefik-bootstrap
 	$(DC_BIN) up -d
 	@echo ""
 	@echo "Traefik dashboard: http://localhost:8080/dashboard/"

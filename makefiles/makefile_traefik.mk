@@ -3,20 +3,25 @@
 
 .PHONY: traefik-bootstrap htpasswd certs reload dashboard test
 
-# Idempotent: ensure acme.json + htpasswd exist with correct permissions
+# Idempotent: ensure acme stores + htpasswd exist with correct permissions
 traefik-bootstrap:
-	@touch acme/acme.json
-	@chmod 600 acme/acme.json
+	@touch acme/acme.json acme/acme-staging.json
+	@chmod 600 acme/acme.json acme/acme-staging.json
 	@touch acme/dashboard.htpasswd
 
-# Generate basic-auth line and append to acme/dashboard.htpasswd
+# Set basic-auth credentials in acme/dashboard.htpasswd (idempotent: replaces
+# any existing line for the same user instead of appending a duplicate).
 # Usage: make htpasswd USER=admin PASS=changeme
 htpasswd:
 	@if [ -z "$(USER)" ] || [ -z "$(PASS)" ]; then \
 		echo "Usage: make htpasswd USER=<user> PASS=<password>"; exit 1; \
 	fi
-	@docker run --rm httpd:2.4-alpine htpasswd -nbB "$(USER)" "$(PASS)" >> acme/dashboard.htpasswd
-	@echo "Added user $(USER) to acme/dashboard.htpasswd"
+	@line=$$(docker run --rm httpd:2.4-alpine htpasswd -nbB "$(USER)" "$(PASS)"); \
+	touch acme/dashboard.htpasswd; \
+	grep -v "^$(USER):" acme/dashboard.htpasswd > acme/dashboard.htpasswd.tmp 2>/dev/null || true; \
+	printf '%s\n' "$$line" >> acme/dashboard.htpasswd.tmp; \
+	mv acme/dashboard.htpasswd.tmp acme/dashboard.htpasswd; \
+	echo "Set password for user $(USER) in acme/dashboard.htpasswd"
 
 # List issued ACME certificates
 certs:

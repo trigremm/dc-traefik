@@ -1,0 +1,22 @@
+# Default TLS handshake policy for every websecure router.
+# Hot-reloaded (file provider watch=true) — no restart needed.
+#
+# Pins the floor at TLS 1.2 with a modern AEAD-only cipher set so the handshake
+# itself doesn't drift if Traefik's built-in defaults change. TLS 1.3 cipher
+# suites are not configurable (the protocol fixes them) and are always allowed.
+tls:
+  options:
+    default:
+      minVersion: VersionTLS12
+      sniStrict: false
+      cipherSuites:
+        - TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+        - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+        - TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305
+        - TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305
+      curvePreferences:
+        - X25519
+        - CurveP256
+        - CurveP384

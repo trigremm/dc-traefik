@@ -14,6 +14,7 @@ services:
       - '--api.insecure=true'
       - '--api.dashboard=true'
       - '--providers.docker=true'
+      - '--providers.docker.endpoint=tcp://socket-proxy:2375'
       - '--providers.docker.exposedbydefault=false'
       - '--providers.docker.network=traefik-public'
       - '--providers.file.directory=/etc/traefik/dynamic'
