@@ -1,0 +1,26 @@
+# Local development override.
+# Copy to docker-compose.override.yaml (gitignored) — Compose auto-merges it.
+#
+# Disables Let's Encrypt and uses Traefik's built-in self-signed cert,
+# routes dashboard to traefik.localhost (browsers resolve *.localhost to 127.0.0.1).
+
+services:
+  traefik:
+    ports:
+      # expose dashboard API on localhost for plain HTTP access
+      - '127.0.0.1:8080:8080'
+    command:
+      # override static config: enable insecure API on :8080, disable ACME
+      - '--api.insecure=true'
+      - '--api.dashboard=true'
+      - '--providers.docker=true'
+      - '--providers.docker.exposedbydefault=false'
+      - '--providers.docker.network=traefik-public'
+      - '--providers.file.directory=/etc/traefik/dynamic'
+      - '--providers.file.watch=true'
+      - '--entrypoints.web.address=:80'
+      - '--entrypoints.websecure.address=:443'
+      - '--log.level=DEBUG'
+    labels:
+      # drop the production dashboard router; use http://localhost:8080/dashboard/ instead
+      - 'traefik.enable=false'

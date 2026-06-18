@@ -76,6 +76,26 @@ make format                            # prettier --write on yml/yaml/md/json (D
 make format-check                      # prettier --check (CI-friendly, exits non-zero on diff)
 ```
 
+### Local development
+
+Skips Let's Encrypt and exposes the dashboard on `http://localhost:8080/dashboard/` (no auth, no TLS) via a gitignored `docker-compose.override.yaml`.
+
+```
+make local-up        # copy override sample if missing + start
+make local-status    # show override + container state
+make local-down      # stop and remove
+make local-clean     # remove override file (next local-up regenerates from sample)
+```
+
+Route test apps to `*.localhost` — browsers resolve those to 127.0.0.1 without `/etc/hosts` edits:
+
+```yaml
+labels:
+  - traefik.enable=true
+  - traefik.http.routers.myapp.rule=Host(`myapp.localhost`)
+  - traefik.http.routers.myapp.entrypoints=web
+```
+
 ## Connecting a project
 
 In any other compose stack:
