@@ -27,6 +27,14 @@ services:
       - socket-proxy
     security_opt:
       - no-new-privileges:true
+    # PING: 1 above exposes /_ping; probe it so Traefik's docker provider only
+    # starts once the proxy is actually accepting connections (busybox wget is
+    # present in the tecnativa/docker-socket-proxy image).
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', '-T', '3', 'http://127.0.0.1:2375/_ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
     logging:
       driver: json-file
       options:
@@ -43,7 +51,8 @@ services:
     container_name: traefik
     restart: always
     depends_on:
-      - socket-proxy
+      socket-proxy:
+        condition: service_healthy
     ports:
       - '80:80'
       - '443:443'
