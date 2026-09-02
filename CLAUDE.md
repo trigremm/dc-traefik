@@ -60,7 +60,7 @@ make test                              # smoke tests
 
 ## Key conventions
 
-- **No host dependencies.** All helpers (htpasswd, jq for cert listing) run via one-shot Docker containers. Do not introduce host-installed tools.
+- **No host dependencies at runtime.** Operational helpers (htpasswd, jq for cert listing) run via one-shot Docker containers. The single exception is `make format`, which uses host `npx prettier@3` and is dev-only — never needed on the server. Do not introduce further host-installed tools.
 - **`acme.json` is the only file worth backing up.** Losing it forces re-issuance — mind LE rate limits (50 certs/domain/week).
 - **Static vs dynamic config:**
   - `traefik/traefik.yml` is static — entryPoints, providers, ACME resolver. Edits require `make reload`.
