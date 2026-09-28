@@ -2,15 +2,14 @@ http:
   middlewares:
     admin-auth:
       basicAuth:
-        # generate hash via: make htpasswd USER=admin PASS=secret
-        # then put the line into TRAEFIK_DASHBOARD_USERS env (escape $ as $$ inside compose)
+        # generate via: make htpasswd USER=admin PASS=secret
+        # (writes acme/dashboard.htpasswd, mounted into the container at /acme)
         usersFile: /acme/dashboard.htpasswd
 
     secure-headers:
       headers:
         frameDeny: true
         contentTypeNosniff: true
-        browserXssFilter: true
         stsSeconds: 31536000
         stsIncludeSubdomains: true
         stsPreload: true

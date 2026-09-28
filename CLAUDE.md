@@ -16,10 +16,11 @@ Traefik does **not** mount `/var/run/docker.sock`. It reads the Docker API throu
 .
 ├── docker-compose.yaml               # traefik + socket-proxy (read-only docker API)
 ├── docker-compose.override.yaml.sample  # local dev: no LE, insecure dashboard
-├── Makefile                          # only `include makefiles/*.mk`
+├── Makefile                          # SHELL/export + explicit `include makefiles/…` lines
 ├── makefiles/
 │   ├── makefile_docker.mk            # network create + prune (CONFIRM=1 on danger)
 │   ├── makefile_docker_compose.mk    # lifecycle, aliases, pattern targets
+│   ├── makefile_format.mk            # prettier format / format-check
 │   ├── makefile_git.mk               # git-pull, git-commit-message
 │   ├── makefile_local.mk             # local-up/down/status/clean
 │   └── makefile_traefik.mk           # bootstrap, htpasswd, certs, test
