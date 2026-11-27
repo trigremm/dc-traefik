@@ -21,6 +21,7 @@ htpasswd:
 	grep -v "^$(USER):" acme/dashboard.htpasswd > acme/dashboard.htpasswd.tmp 2>/dev/null || true; \
 	printf '%s\n' "$$line" >> acme/dashboard.htpasswd.tmp; \
 	mv acme/dashboard.htpasswd.tmp acme/dashboard.htpasswd; \
+	chmod 600 acme/dashboard.htpasswd; \
 	echo "Set password for user $(USER) in acme/dashboard.htpasswd"
 
 # List issued ACME certificates

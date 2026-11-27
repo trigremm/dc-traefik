@@ -76,7 +76,7 @@ make git-commit-message                # show current commit + message
 
 ```
 make f                                 # alias for `make format`
-make format                            # prettier --write on yml/yaml/md/json (Docker, no host deps)
+make format                            # prettier --write on yml/yaml/md/json (host npx prettier@3, dev-only)
 make format-check                      # prettier --check (CI-friendly, exits non-zero on diff)
 ```
 
