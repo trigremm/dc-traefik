@@ -25,3 +25,6 @@ acme/dashboard.htpasswd.tmp
 
 # prompt files
 prompt*.txt
+
+# claude code per-machine settings
+.claude/settings.local.json

@@ -159,10 +159,11 @@ To change middleware, edit the YAML — `watch: true` is enabled, no restart nee
 .
 ├── docker-compose.yaml               # traefik + read-only docker socket-proxy
 ├── docker-compose.override.yaml.sample  # local dev (no LE, insecure dashboard)
-├── Makefile                          # only `include makefiles/*.mk` lines
+├── Makefile                          # SHELL/export + explicit `include makefiles/…` lines
 ├── makefiles/
 │   ├── makefile_docker.mk            # network create + prune (with CONFIRM=1)
 │   ├── makefile_docker_compose.mk    # lifecycle, aliases, pattern targets
+│   ├── makefile_format.mk            # prettier format / format-check
 │   ├── makefile_git.mk               # git-pull, git-commit-message
 │   ├── makefile_local.mk             # local-up/down/status/clean
 │   └── makefile_traefik.mk           # bootstrap, htpasswd, certs, test
